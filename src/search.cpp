@@ -369,7 +369,9 @@ template <Node node> Score Search::absearch(int depth, Score alpha, Score beta, 
     }
 
     // use tt eval for a better staticEval
-    ss->eval = staticEval = ttHit ? tte.score : Eval::evaluation(td->board);
+    ss->eval = staticEval = Eval::evaluation(td->board);
+
+    if (ttHit) ss->eval = tte.score;
 
     // improving boolean
     improving = (ss - 2)->eval != VALUE_NONE ? staticEval > (ss - 2)->eval : false;
@@ -380,21 +382,21 @@ template <Node node> Score Search::absearch(int depth, Score alpha, Score beta, 
     /********************
      * Razoring
      *******************/
-    if (!PvNode && depth < 3 && staticEval + 120 < alpha)
+    if (!PvNode && depth < 3 && ss->eval + 120 < alpha)
         return qsearch<NonPV>(alpha, beta, 0, ss, td);
 
     /********************
      * Reverse futility pruning
      *******************/
     if (std::abs(beta) < VALUE_MATE_IN_PLY)
-        if (depth < 6 && staticEval - 61 * depth + 73 * improving >= beta)
+        if (depth < 6 && ss->eval - 61 * depth + 73 * improving >= beta)
             return beta;
 
     /********************
      * Null move pruning
      *******************/
     if (!PvNode && td->board.nonPawnMat(color) && (ss - 1)->currentmove != NULL_MOVE && depth >= 3 &&
-        staticEval >= beta)
+        staticEval >= beta && ss->eval>=beta)
     {
         int R = 5 + std::min(4, depth / 5) + std::min(3, (staticEval - beta) / 214);
 
